@@ -38,5 +38,6 @@ jobs:
             **/.git*
             **/.git*/**
             **/node_modules/**
-            **/api/**
+            api/.env
+            api/.env.local
             cleanup.php
