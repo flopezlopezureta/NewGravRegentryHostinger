@@ -10,6 +10,9 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ user, devices, onSelectDevice }) => {
   const stats = useMemo(() => {
+    if (!Array.isArray(devices)) {
+      return { total: '00', online: '00', offline: '00' };
+    }
     const total = devices.length;
     const online = devices.filter(d => d.status === 'online').length;
     const offline = devices.filter(d => d.status === 'offline').length;

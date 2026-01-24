@@ -11,8 +11,15 @@ export const databaseService = {
   },
 
   getCompanies: async (): Promise<Company[]> => {
-    const res = await fetch(`${API_BASE}?action=get_companies`);
-    return await res.json();
+    try {
+      const res = await fetch(`${API_BASE}?action=get_companies`);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+      return [];
+    }
   },
 
   addCompany: async (company: Omit<Company, 'id'>) => {
@@ -31,8 +38,15 @@ export const databaseService = {
 
   getDevices: async (user?: User | null): Promise<Device[]> => {
     if (!user) return [];
-    const res = await fetch(`${API_BASE}?action=get_devices&company_id=${user.company_id}&role=${user.role}`);
-    return await res.json();
+    try {
+      const res = await fetch(`${API_BASE}?action=get_devices&company_id=${user.company_id}&role=${user.role}`);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error fetching devices:', error);
+      return [];
+    }
   },
 
   addDevice: async (device: any) => {
@@ -69,8 +83,15 @@ export const databaseService = {
   },
 
   getUsers: async (companyId?: string): Promise<User[]> => {
-    const res = await fetch(`${API_BASE}?action=get_users${companyId ? `&company_id=${companyId}` : ''}`);
-    return await res.json();
+    try {
+      const res = await fetch(`${API_BASE}?action=get_users${companyId ? `&company_id=${companyId}` : ''}`);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return [];
+    }
   },
 
   addUser: async (user: Omit<User, 'id'>) => {

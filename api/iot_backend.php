@@ -246,8 +246,11 @@ try {
             echo json_encode(['error' => 'Acción no encontrada']);
             break;
     }
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+} catch (Throwable $e) {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+    }
+    echo json_encode(['error' => $e->getMessage(), 'type' => get_class($e)]);
 }
 ?>

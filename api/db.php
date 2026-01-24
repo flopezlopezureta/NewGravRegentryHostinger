@@ -88,6 +88,7 @@ function getDB()
 
 // Configuración de CORS (restringido al dominio permitido)
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 // Lista de orígenes permitidos
 $allowedOrigins = [
@@ -114,7 +115,7 @@ header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
 header("Referrer-Policy: strict-origin-when-cross-origin");
 
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+if ($method == 'OPTIONS') {
     exit;
 }
 ?>
