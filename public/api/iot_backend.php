@@ -85,6 +85,11 @@ try {
             $stmt->execute([$device_id, $limit]);
             $measurements = $stmt->fetchAll();
 
+            // Cast numeric values
+            foreach ($measurements as &$m) {
+                $m['value'] = (float) $m['value'];
+            }
+
             // Revertir para que el gráfico vaya de antiguo a nuevo
             echo json_encode(array_reverse($measurements));
             break;
