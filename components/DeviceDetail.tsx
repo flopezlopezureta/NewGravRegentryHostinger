@@ -148,7 +148,10 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, onBack, onRefresh }
   };
   */
 
-  const displayedValue = device.value + calibrationOffset;
+  // Ensure values are numbers to prevent "toFixed is not a function" error
+  const safeValue = Number(device.value) || 0;
+  const safeOffset = Number(calibrationOffset) || 0;
+  const displayedValue = safeValue + safeOffset;
   const isOutOfRange = !maintenanceMode && (displayedValue < minThreshold || displayedValue > maxThreshold);
 
   return (
@@ -510,9 +513,9 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, onBack, onRefresh }
                         <td className="px-6 py-3 text-[10px] font-mono text-slate-400 whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
                         <td className="px-6 py-3">
                           <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase ${log.event_type === 'ALARM' ? 'bg-rose-500/20 text-rose-400' :
-                              log.event_type === 'MAINTENANCE' ? 'bg-amber-500/20 text-amber-400' :
-                                log.event_type === 'CONFIG_CHANGE' ? 'bg-cyan-500/20 text-cyan-400' :
-                                  'bg-slate-700/50 text-slate-300'
+                            log.event_type === 'MAINTENANCE' ? 'bg-amber-500/20 text-amber-400' :
+                              log.event_type === 'CONFIG_CHANGE' ? 'bg-cyan-500/20 text-cyan-400' :
+                                'bg-slate-700/50 text-slate-300'
                             }`}>
                             {log.event_type}
                           </span>

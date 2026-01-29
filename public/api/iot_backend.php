@@ -64,9 +64,15 @@ try {
 
             $devices = $stmt->fetchAll();
             foreach ($devices as &$d) {
-                $d['hardwareConfig'] = json_decode($d['hardware_config'], true);
+                $d['hardwareConfig'] = json_decode($d['hardware_config'] ?? '{}', true);
                 unset($d['hardware_config']);
                 $d['value'] = (float) $d['last_value'];
+
+                // New fields casting
+                $d['calibration_offset'] = (float) ($d['calibration_offset'] ?? 0);
+                $d['maintenance_mode'] = (bool) ($d['maintenance_mode'] ?? false);
+                $d['heartbeat_interval'] = (int) ($d['heartbeat_interval'] ?? 1800);
+                $d['notification_settings'] = json_decode($d['notification_settings'] ?? '{}', true);
             }
             echo json_encode($devices);
             break;
