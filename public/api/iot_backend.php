@@ -339,11 +339,28 @@ try {
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+
+            // Debugging options
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Try disabling SSL check temporarily
+
             $response = curl_exec($ch);
+            $err = curl_error($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
+            if ($err) {
+                echo json_encode(['error' => 'Curl Error: ' . $err]);
+                break;
+            }
+
             $resData = json_decode($response, true);
-            echo $resData['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
+
+            if (isset($resData['candidates'][0]['content']['parts'][0]['text'])) {
+                echo $resData['candidates'][0]['content']['parts'][0]['text'];
+            } else {
+                // Return full error response for debugging
+                echo json_encode(['error' => 'Gemini API Error', 'details' => $resData, 'http_code' => $httpCode, 'raw' => $response]);
+            }
             break;
 
         default:
