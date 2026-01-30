@@ -1,11 +1,12 @@
 # 🚀 Despliegue en selcom.cl (Producción)
 
-Este es el dominio final de producción. He actualizado la configuración necesaria para que el Hub funcione bajo este dominio.
+Este es el dominio final de producción. He actualizado la configuración necesaria para que el Hub funcione bajo este dominio utilizando el nuevo repositorio [selcom-hostinger](https://github.com/flopezlopezureta/selcom-hostinger).
 
 ## ✅ Cambios Realizados
 
 1.  **Backend Config**: `public/api/.env` ahora tiene `ALLOWED_ORIGIN=https://selcom.cl`.
-2.  **CORS**: La API solo aceptará peticiones desde el dominio selcom.cl por seguridad.
+2.  **Repo Producción**: Configurado `autopush.bat` para subir automáticamente a [selcom-hostinger](https://github.com/flopezlopezureta/selcom-hostinger).
+3.  **CORS**: La API solo aceptará peticiones desde el dominio selcom.cl por seguridad.
 
 ---
 
