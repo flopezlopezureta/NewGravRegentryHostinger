@@ -701,12 +701,39 @@ h1 {
 
 /* Animations */
 [data-animate] {
-    opacity: 0;
-    transform: translateY(30px);
+    opacity: 1;
+    transform: none;
     transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Solo ocultarlos si JS está activo y NO son visibles aún */
+html.js-enabled [data-animate]:not(.visible) {
+    opacity: 0;
+    transform: translateY(30px);
+}
+
 [data-animate].visible {
-    opacity: 1;
-    transform: translateY(0);
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+/* CRITICAL FIX: Force all images to be visible on mobile */
+@media (max-width: 768px) {
+    img {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: block !important;
+    }
+    
+    .hero-slider .slide {
+        opacity: 1 !important;
+    }
+    
+    .hero-slider .slide.active {
+        opacity: 1 !important;
+    }
+    
+    .showroom-image-box img {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
 }

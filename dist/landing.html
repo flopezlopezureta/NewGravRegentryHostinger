@@ -17,6 +17,7 @@
         }
     </style>
 </head>
+<script>document.documentElement.classList.add('js-enabled');</script>
 
 <body>
     <div class="bg-glow" style="top: -200px; right: -200px;"></div>
@@ -52,7 +53,7 @@
         <!-- Hero Section -->
         <section class="hero">
             <div class="container hero-grid">
-                <div data-animate>
+                <div>
                     <span class="section-tag">Industria 4.0</span>
                     <h1>El Futuro del Monitoreo Industrial <span style="color: var(--primary);">con IA</span></h1>
                     <p>Gestiona miles de activos con telemetría de alta precisión y genera firmware inteligente en
@@ -62,12 +63,14 @@
                         <a href="#features" class="btn btn-secondary">Ver Tecnología</a>
                     </div>
                 </div>
-                <div class="hero-image" data-animate style="transition-delay: 0.2s;">
+                <div class="hero-image" style="transition-delay: 0.2s;">
                     <div class="hero-slider">
-                        <img src="assets/landing/hero.png" alt="Selcom IoT Gateway" class="slide active">
-                        <img src="assets/landing/dashboard.png" alt="Selcom Telemetry Dashboard" class="slide">
-                        <img src="assets/landing/detail.png" alt="Selcom Sensor Detail" class="slide">
-                        <img src="assets/landing/history.png" alt="Selcom Data History" class="slide">
+                        <img src="assets/landing/hero.png" alt="Selcom IoT Gateway" class="slide active"
+                            loading="eager">
+                        <img src="assets/landing/dashboard.png" alt="Selcom Telemetry Dashboard" class="slide"
+                            loading="lazy">
+                        <img src="assets/landing/detail.png" alt="Selcom Sensor Detail" class="slide" loading="lazy">
+                        <img src="assets/landing/history.png" alt="Selcom Data History" class="slide" loading="lazy">
                     </div>
                 </div>
 
@@ -130,7 +133,7 @@
                 <!-- Item 1: Login -->
                 <div class="showroom-item" data-animate>
                     <div class="showroom-image-box">
-                        <img src="assets/landing/login.png" alt="Selcom Login Screen">
+                        <img src="assets/landing/login.png" alt="Selcom Login Screen" loading="lazy">
                     </div>
                     <div class="showroom-text">
                         <span class="section-tag" style="color: var(--secondary);">Seguridad Centralizada</span>
@@ -149,14 +152,14 @@
                             directamente en la interfaz para configurar alarmas de forma intuitiva.</p>
                     </div>
                     <div class="showroom-image-box">
-                        <img src="assets/landing/dashboard.png" alt="Selcom Telemetry Dashboard">
+                        <img src="assets/landing/dashboard.png" alt="Selcom Telemetry Dashboard" loading="lazy">
                     </div>
                 </div>
 
                 <!-- Item 3: Deep Detail -->
                 <div class="showroom-item" data-animate style="transition-delay: 0.2s;">
                     <div class="showroom-image-box">
-                        <img src="assets/landing/detail.png" alt="Selcom Sensor Detail">
+                        <img src="assets/landing/detail.png" alt="Selcom Sensor Detail" loading="lazy">
                     </div>
                     <div class="showroom-text">
                         <span class="section-tag" style="color: var(--primary);">Control de Activos</span>
@@ -175,7 +178,7 @@
                             garantizada a CSV para auditorías externas.</p>
                     </div>
                     <div class="showroom-image-box">
-                        <img src="assets/landing/history.png" alt="Selcom Data History">
+                        <img src="assets/landing/history.png" alt="Selcom Data History" loading="lazy">
                     </div>
                 </div>
             </div>
@@ -191,7 +194,7 @@
 
                 <div class="ai-grid">
                     <div class="showroom-image-box" data-animate>
-                        <img src="assets/landing/ai_config.png" alt="Selcom AI Config">
+                        <img src="assets/landing/ai_config.png" alt="Selcom AI Config" loading="lazy">
                     </div>
                     <div data-animate>
                         <h3 style="font-size: 2rem; margin-bottom: 1.5rem;">Configuración Asistida</h3>
@@ -209,7 +212,7 @@
                             dispositivo.</p>
                     </div>
                     <div class="showroom-image-box" data-animate>
-                        <img src="assets/landing/firmware.png" alt="Selcom Generated Firmware">
+                        <img src="assets/landing/firmware.png" alt="Selcom Generated Firmware" loading="lazy">
                     </div>
                 </div>
             </div>
