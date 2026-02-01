@@ -114,4 +114,4 @@ export interface Measurement {
   timestamp: string;
 }
 
-export type ViewMode = 'dashboard' | 'companies' | 'users' | 'devices' | 'device-detail' | 'create-device' | 'create-company' | 'profile';
+export type ViewMode = 'dashboard' | 'companies' | 'users' | 'devices' | 'device-detail' | 'create-device' | 'create-company' | 'profile' | 'settings';
