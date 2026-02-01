@@ -14,7 +14,7 @@ interface DeviceDetailProps {
   onRefresh: () => void;
 }
 
-type TabType = 'monitoring' | 'history' | 'audit' | 'firmware' | 'troubleshooting';
+type TabType = 'monitoring' | 'history' | 'audit' | 'firmware' | 'troubleshooting' | 'controls';
 
 const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, onBack, onRefresh }) => {
   const [activeTab, setActiveTab] = useState<TabType>('monitoring');
@@ -41,11 +41,11 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, onBack, onRefresh }
   const [loadingLogs, setLoadingLogs] = useState(false);
 
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>(device.notification_settings || {
-    email: true,
-    whatsapp: false,
     push: true,
     critical_only: true
   });
+
+  const [actuatorLevels, setActuatorLevels] = useState<Record<number, boolean>>(device.actuator_states || {});
 
   const timeOptions = [
     { label: '5m', value: 5 },
@@ -119,6 +119,13 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, onBack, onRefresh }
     onRefresh(); // Refresh parent to get updated device object
   };
 
+  const handleToggleActuator = async (pin: number) => {
+    const newState = !actuatorLevels[pin];
+    const newLevels = { ...actuatorLevels, [pin]: newState };
+    setActuatorLevels(newLevels);
+    await databaseService.updateDevice(device.id, { actuator_states: newLevels });
+  };
+
   // Sincronizar historial con el valor global que viene de App.tsx
   useEffect(() => {
     const now = new Date();
@@ -170,8 +177,15 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, onBack, onRefresh }
           </div>
         </div>
         <div className="flex bg-slate-900 p-1 rounded-2xl border border-slate-800 overflow-x-auto shadow-inner no-scrollbar">
-          {['monitoring', 'history', 'audit', 'firmware', 'troubleshooting'].map((t) => (
-            <button key={t} onClick={() => setActiveTab(t as TabType)} className={`px-4 lg:px-6 py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === t ? 'bg-cyan-500 text-[#0f172a] shadow-lg shadow-cyan-500/20' : 'text-slate-500 hover:text-slate-300'}`}>{t === 'troubleshooting' ? 'Soporte' : t === 'history' ? 'Historial' : t === 'audit' ? 'Eventos' : t === 'monitoring' ? 'Monitor' : t}</button>
+          {['monitoring', 'controls', 'history', 'audit', 'firmware', 'troubleshooting'].map((t) => (
+            <button
+              key={t}
+              onClick={() => setActiveTab(t as TabType)}
+              className={`px-4 lg:px-6 py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === t ? 'bg-cyan-500 text-[#0f172a] shadow-lg shadow-cyan-500/20' : 'text-slate-500 hover:text-slate-300'}`}
+              style={{ display: t === 'controls' && (!device.actuators || device.actuators.length === 0) ? 'none' : 'block' }}
+            >
+              {t === 'troubleshooting' ? 'Soporte' : t === 'history' ? 'Historial' : t === 'audit' ? 'Eventos' : t === 'monitoring' ? 'Monitor' : t === 'controls' ? 'Control' : t}
+            </button>
           ))}
         </div>
       </div>
@@ -553,6 +567,78 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, onBack, onRefresh }
             </div>
           </div>
           {generatedSketch && <CodeViewer code={generatedSketch.code} explanation={generatedSketch.explanation} />}
+        </div>
+      )}
+
+      {activeTab === 'controls' && device.actuators && (
+        <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+          <div className="bg-[#1e293b] rounded-[2rem] border border-slate-800 p-10 shadow-2xl">
+            <div className="flex items-center gap-6 mb-12">
+              <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-rose-500 border border-slate-800 shadow-inner">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white uppercase tracking-tight">Centro de Control de Salidas</h3>
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-1">Gestión de actuadores y lógica de campo</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {device.actuators.map((act) => (
+                <div key={act.pin} className="bg-slate-900/40 p-8 rounded-[2.5rem] border border-slate-800 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-slate-800/10 rounded-full -mr-12 -mt-12 transition-all group-hover:bg-slate-800/20"></div>
+
+                  <div className="flex justify-between items-start relative z-10 mb-8">
+                    <div>
+                      <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Pin GPIO {act.pin}</p>
+                      <h4 className="text-white text-lg font-bold uppercase">{act.name}</h4>
+                    </div>
+                    <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase border ${act.mode === 'manual' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      }`}>
+                      {act.mode === 'manual' ? 'Manual' : act.mode === 'auto_high' ? 'Auto >' : 'Auto <'}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-slate-950/50 p-6 rounded-3xl border border-slate-800/50">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Estado Actual</span>
+                      <span className={`text-sm font-black uppercase mt-1 ${actuatorLevels[act.pin] ? 'text-emerald-400' : 'text-slate-600'}`}>
+                        {actuatorLevels[act.pin] ? 'Activo (HIGH)' : 'Inactivo (LOW)'}
+                      </span>
+                    </div>
+
+                    {act.mode === 'manual' ? (
+                      <button
+                        onClick={() => handleToggleActuator(act.pin)}
+                        className={`w-16 h-8 rounded-full p-1 transition-all duration-300 ${actuatorLevels[act.pin] ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'bg-slate-700'}`}
+                      >
+                        <div className={`w-6 h-6 rounded-full bg-white shadow-lg transform transition-transform duration-300 ${actuatorLevels[act.pin] ? 'translate-x-8' : 'translate-x-0'}`} />
+                      </button>
+                    ) : (
+                      <div className="text-right">
+                        <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest">En Control Auto</p>
+                        <p className="text-white font-mono text-xs font-bold mt-1">Uptate: {act.threshold} {device.unit}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {act.mode !== 'manual' && (
+                    <p className="mt-6 text-[9px] text-slate-500 leading-relaxed font-medium italic">
+                      * Este pin es controlado automáticamente por el hardware basado en el sensor principal. Los cambios manuales están bloqueados.
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {(!device.actuators || device.actuators.length === 0) && (
+              <div className="py-20 text-center border-2 border-dashed border-slate-800 rounded-3xl">
+                <p className="text-slate-500 text-xs font-black uppercase tracking-widest">No hay actuadores configurados para este dispositivo.</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

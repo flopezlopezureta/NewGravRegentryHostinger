@@ -1,0 +1,1 @@
+ALTER TABLE devices ADD COLUMN actuators JSON AFTER hardware_config; ALTER TABLE devices ADD COLUMN actuator_states JSON AFTER actuators; ALTER TABLE devices ADD COLUMN thresholds JSON AFTER actuator_states;

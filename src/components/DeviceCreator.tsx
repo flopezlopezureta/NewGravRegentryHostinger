@@ -24,7 +24,8 @@ const DeviceCreator: React.FC<DeviceCreatorProps> = ({ onSuccess, onCancel, comp
     networkMode: NetworkMode.NB_IOT,
     endpoint: 'https://iot.selcom.cl/api/v1',
     interval: 30,
-    model_variant: 'Standard'
+    model_variant: 'Standard',
+    actuators: [] as any[]
   });
 
   const [loadingStep, setLoadingStep] = useState(0);
@@ -72,7 +73,9 @@ const DeviceCreator: React.FC<DeviceCreatorProps> = ({ onSuccess, onCancel, comp
         protocol: editDevice.hardwareConfig.protocol,
         networkMode: editDevice.hardwareConfig.networkMode,
         endpoint: editDevice.hardwareConfig.endpoint,
-        interval: editDevice.hardwareConfig.interval
+        interval: editDevice.hardwareConfig.interval,
+        model_variant: editDevice.model_variant || 'Standard',
+        actuators: editDevice.actuators || []
       });
     } else if (companies.length > 0 && !formData.company_id) {
       setFormData(prev => ({ ...prev, company_id: companies[0].id }));
@@ -104,7 +107,9 @@ const DeviceCreator: React.FC<DeviceCreatorProps> = ({ onSuccess, onCancel, comp
         formData.sensor,
         formData.protocol,
         formData.endpoint,
-        formData.networkMode
+        formData.networkMode,
+        undefined,
+        formData.actuators
       );
       setPreviewCode(result);
     } catch (error) {
@@ -137,7 +142,8 @@ const DeviceCreator: React.FC<DeviceCreatorProps> = ({ onSuccess, onCancel, comp
         endpoint: formData.endpoint,
         interval: formData.interval
       },
-      model_variant: formData.model_variant
+      model_variant: formData.model_variant,
+      actuators: formData.actuators
     };
 
     if (editDevice) {
@@ -267,6 +273,99 @@ const DeviceCreator: React.FC<DeviceCreatorProps> = ({ onSuccess, onCancel, comp
               <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Servidor / API Endpoint</label>
               <input value={formData.endpoint} onChange={e => setFormData({ ...formData, endpoint: e.target.value })} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-5 py-4 text-cyan-400 font-mono text-sm" placeholder="https://..." />
             </div>
+          </div>
+
+          {/* SECCIÓN 3: ACTUADORES (NUEVO) */}
+          <div className="space-y-8 bg-slate-900/40 p-8 rounded-[2rem] border border-slate-800">
+            <div className="flex items-center justify-between">
+              <h3 className="text-rose-400 text-[10px] font-black uppercase tracking-[0.2em] border-l-2 border-rose-500 pl-3">Control de Salidas (Actuadores / Puertas)</h3>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, actuators: [...formData.actuators, { pin: 2, name: 'Salida ' + (formData.actuators.length + 1), mode: 'manual' }] })}
+                className="px-4 py-2 bg-rose-500/10 text-rose-400 rounded-xl text-[9px] font-black uppercase border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all"
+              >
+                + Agregar Pin
+              </button>
+            </div>
+
+            {formData.actuators.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {formData.actuators.map((act, idx) => (
+                  <div key={idx} className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 relative group">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, actuators: formData.actuators.filter((_, i) => i !== idx) })}
+                      className="absolute top-4 right-4 text-slate-600 hover:text-rose-500 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <div>
+                        <label className="block text-[8px] font-black text-slate-500 mb-1 uppercase">Pin GPIO</label>
+                        <input
+                          type="number"
+                          value={act.pin}
+                          onChange={e => {
+                            const newActs = [...formData.actuators];
+                            newActs[idx].pin = parseInt(e.target.value);
+                            setFormData({ ...formData, actuators: newActs });
+                          }}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[8px] font-black text-slate-500 mb-1 uppercase">Nombre</label>
+                        <input
+                          value={act.name}
+                          onChange={e => {
+                            const newActs = [...formData.actuators];
+                            newActs[idx].name = e.target.value;
+                            setFormData({ ...formData, actuators: newActs });
+                          }}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <label className="block text-[8px] font-black text-slate-500 mb-1 uppercase">Lógica de Activación</label>
+                      <select
+                        value={act.mode}
+                        onChange={e => {
+                          const newActs = [...formData.actuators];
+                          newActs[idx].mode = e.target.value;
+                          setFormData({ ...formData, actuators: newActs });
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-[10px] font-bold uppercase"
+                      >
+                        <option value="manual">Manual (Desde Hub)</option>
+                        <option value="auto_high">Automático (Sensor &gt; Umbral)</option>
+                        <option value="auto_low">Automático (Sensor &lt; Umbral)</option>
+                      </select>
+                    </div>
+                    {(act.mode === 'auto_high' || act.mode === 'auto_low') && (
+                      <div className="mt-4 animate-in slide-in-from-top-2">
+                        <label className="block text-[8px] font-black text-cyan-500 mb-1 uppercase">Umbral de Activación ({formData.unit})</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={act.threshold || 0}
+                          onChange={e => {
+                            const newActs = [...formData.actuators];
+                            newActs[idx].threshold = parseFloat(e.target.value);
+                            setFormData({ ...formData, actuators: newActs });
+                          }}
+                          className="w-full bg-slate-950 border border-cyan-500/30 rounded-lg px-3 py-2 text-cyan-400 text-xs font-bold"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-10 text-center border-2 border-dashed border-slate-800 rounded-2xl">
+                <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">No hay salidas configuradas para este activo.</p>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col md:flex-row justify-end gap-4 pt-6 border-t border-slate-800">

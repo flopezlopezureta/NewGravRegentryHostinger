@@ -60,6 +60,15 @@ export enum NetworkMode {
   WIFI = 'WiFi (Native)'
 }
 
+export type ActuatorMode = 'manual' | 'auto_high' | 'auto_low' | 'scheduled';
+
+export interface ActuatorConfig {
+  pin: number;
+  name: string;
+  mode: ActuatorMode;
+  threshold?: number;
+}
+
 export interface Device {
   id: string;
   name: string;
@@ -88,6 +97,8 @@ export interface Device {
   calibration_offset?: number;
   heartbeat_interval?: number; // seconds
   notification_settings?: NotificationSettings; // JSON
+  actuators?: ActuatorConfig[];
+  actuator_states?: Record<number, boolean>;
 }
 
 export interface NotificationSettings {

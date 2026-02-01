@@ -73,6 +73,9 @@ try {
                 $d['maintenance_mode'] = (bool) ($d['maintenance_mode'] ?? false);
                 $d['heartbeat_interval'] = (int) ($d['heartbeat_interval'] ?? 1800);
                 $d['notification_settings'] = json_decode($d['notification_settings'] ?? '{}', true);
+                $d['actuators'] = json_decode($d['actuators'] ?? '[]', true);
+                $d['actuator_states'] = json_decode($d['actuator_states'] ?? '{}', true);
+                $d['thresholds'] = json_decode($d['thresholds'] ?? '{}', true);
             }
             echo json_encode($devices);
             break;
@@ -100,7 +103,7 @@ try {
                 throw new Exception('La dirección MAC/ID Físico es obligatoria');
             }
             $id = uniqid('dev_');
-            $stmt = $db->prepare("INSERT INTO devices (id, name, mac_address, type, unit, last_value, company_id, hardware_config, model_variant) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $db->prepare("INSERT INTO devices (id, name, mac_address, type, unit, last_value, company_id, hardware_config, model_variant, actuators) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $id,
                 $data['name'],
@@ -110,7 +113,8 @@ try {
                 $data['value'] ?? 0,
                 $data['company_id'],
                 json_encode($data['hardwareConfig']),
-                $data['model_variant'] ?? 'ESP32-WROOM'
+                $data['model_variant'] ?? 'ESP32-WROOM',
+                json_encode($data['actuators'] ?? [])
             ]);
             echo json_encode(['success' => true, 'id' => $id]);
             break;
@@ -192,25 +196,21 @@ try {
                 $updateFields[] = "notification_settings=?";
                 $params[] = json_encode($data['notification_settings']);
             }
+            if (isset($data['actuators'])) {
+                $updateFields[] = "actuators=?";
+                $params[] = json_encode($data['actuators']);
+            }
+            if (isset($data['actuator_states'])) {
+                $updateFields[] = "actuator_states=?";
+                $params[] = json_encode($data['actuator_states']);
+            }
             if (isset($data['thresholds'])) {
-                // thresholds are usually stored in hardware_config or separate JSON if schema supports it.
-                // Assuming currently stored in hardware_config or maybe previous implementation relied on client-side or separate column not shown in minimal schema.
-                // Checking previous code: updateDevice was calling with thresholds.
-                // Wait, schema.sql does NOT have 'thresholds' column! It must be part of hardware_config or missing?
-                // Checking types.ts: Device has thresholds?: { min, max }.
-                // Checking iot_backend.php previous: It did NOT handle thresholds explicitly in UPDATE!
-                // Ah, previous code:
-                // $stmt = $db->prepare("UPDATE devices SET name=?, mac_address=?, type=?, unit=?, company_id=?, hardware_config=?, model_variant=? WHERE id=?");
-                // It seems thresholds were NOT persisted in DB or lost?
-                // Let's add thresholds to standard JSON config or new column if needed.
-                // For now, let's assume we put it into hardware_config if passed, or just ignore if not schema ready.
-                // Re-reading previous 'update_device': only updated specific fields.
-                // IMPORTANT: Client sends thresholds separately in existing code?
-                // `databaseService.updateDevice(device.id, { thresholds: { min: val, max: maxThreshold } });`
-                // This means previous backend code IGNORED thresholds! This is a BUG being monitored?
-                // Let's fix this by storing thresholds in `hardware_config` JSON merge, or add a column.
-                // Adding 'thresholds' column is safer for queryability, but JSON is flexible.
-                // Let's assume we should save it. I'll add logic to merge into hardware_config if received, OR better, let's add `thresholds` JSON column to schema updates to be clean.
+                $updateFields[] = "thresholds=?";
+                $params[] = json_encode($data['thresholds']);
+            }
+            if (isset($data['thresholds'])) {
+                $updateFields[] = "thresholds=?";
+                $params[] = json_encode($data['thresholds']);
             }
 
             if (!empty($updateFields)) {

@@ -7,7 +7,8 @@ export const generateIoTCode = async (
   protocol: ProtocolType,
   endpoint: string,
   networkMode: NetworkMode,
-  topic?: string
+  topic?: string,
+  actuators?: any[]
 ) => {
   try {
     // Intentar primero con la API (si se desea mantener como opción)
@@ -32,13 +33,23 @@ export const generateIoTCode = async (
       : `Usa HTTPClient.h. POST JSON a: ${endpoint}.`;
 
     const prompt = `
-      Genera código C++ (.ino) para:
+      Genera código C++ (.ino) para un dispositivo IoT:
       - PLACA: ${hardware} (${hardwareProfiles[hardware]})
       - RED: ${networkMode} (${networkInstructions})
       - PROTOCOLO: ${protocol} (${protocolInstructions})
-      - SENSOR: ${sensor}
+      - SENSOR PRINCIPAL: ${sensor}
       
-      Reglas: Manejo de errores, LED status con millis(), JSON consistente.
+      - SALIDAS DIGITALES (ACTUADORES):
+      ${actuators && actuators.length > 0
+        ? actuators.map(a => `- Pin ${a.pin}: ${a.name} (Modo: ${a.mode}${a.threshold ? `, Umbral: ${a.threshold}` : ''})`).join('\n      ')
+        : 'Ninguna configurada.'}
+
+      REGLAS DE LÓGICA:
+      1. Si se configuraron Actuadores en modo 'auto_high', activar el PIN si el valor del sensor > umbral.
+      2. Si están en modo 'auto_low', activar si valor del sensor < umbral.
+      3. Si están en 'manual', el código debe permitir recibir comandos (ej: revisar respuesta HTTP para un campo "commands" o similar, o simplemente dejar los pins listos para digitalWrite).
+      
+      Reglas Generales: Manejo de errores de red, LED status con millis(), JSON consistente.
       Devuelve JSON: {"code": "...", "explanation": "..."}
     `;
 
