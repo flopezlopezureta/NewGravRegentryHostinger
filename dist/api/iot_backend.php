@@ -208,10 +208,6 @@ try {
                 $updateFields[] = "thresholds=?";
                 $params[] = json_encode($data['thresholds']);
             }
-            if (isset($data['thresholds'])) {
-                $updateFields[] = "thresholds=?";
-                $params[] = json_encode($data['thresholds']);
-            }
 
             if (!empty($updateFields)) {
                 $params[] = $id;
