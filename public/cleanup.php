@@ -15,9 +15,10 @@ $filesToDelete = [
     'vite.config.ts',
     'tsconfig.json',
     'metadata.json',
-    '.env',
-    '.env.local',
-    'App.tsx'
+    'App.tsx',
+    'index.php',
+    'default.php',
+    'index.php.bak'
 ];
 
 // Comprobar si el index.html es el de desarrollo (contiene index.tsx)
@@ -72,5 +73,8 @@ function deleteDirectory($dir)
     return rmdir($dir);
 }
 
-echo "<br><b>Limpieza completada. Por favor borra este archivo (cleanup.php) por seguridad.</b>";
+echo "<br><b>Limpieza completada.</b><br>";
+echo "Archivos en raíz: <pre>";
+print_r(scandir('.'));
+echo "</pre>";
 ?>

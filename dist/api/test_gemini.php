@@ -11,13 +11,10 @@ echo "===================================\n";
 echo "PHP Version: " . phpversion() . "\n";
 echo "API Key Definida: " . (defined('GEMINI_API_KEY') ? "SI" : "NO") . "\n";
 
-if (!function_exists('curl_init')) {
-    echo "ERROR CRITICO: La extensión CURL de PHP no está activada en este servidor.\n";
-    exit;
-}
+// CURL check suppressed to test file_get_contents fallback
 
 // MODELO SELECCIONADO (Validado por lista anterior)
-$model = "gemini-2.0-flash-001";
+$model = "gemini-2.0-flash";
 
 echo "Intentando conectar con modelo: $model...\n";
 $url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=" . GEMINI_API_KEY;
@@ -32,20 +29,20 @@ $payload = [
     ]
 ];
 
-$ch = curl_init($url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true); // Volvemos a POST para generar contenido
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-curl_setopt($ch, CURLOPT_VERBOSE, true);
-$verbose = fopen('php://temp', 'w+');
-curl_setopt($ch, CURLOPT_STDERR, $verbose);
-
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError = curl_error($ch);
-
-curl_close($ch);
+$options = [
+    'http' => [
+        'header' => "Content-type: application/json\r\n",
+        'method' => 'POST',
+        'content' => json_encode($payload),
+        'ignore_errors' => true // Para capturar errores HTTP
+    ]
+];
+$context = stream_context_create($options);
+$response = file_get_contents($url, false, $context);
+$http_response_header = $http_response_header ?? [];
+preg_match('/HTTP\/\d\.\d (\d+)/', $http_response_header[0] ?? '', $matches);
+$httpCode = $matches[1] ?? 0;
+// $curlError = "N/A (using file_get_contents)";
 
 echo "Codigo HTTP: $httpCode\n";
 
