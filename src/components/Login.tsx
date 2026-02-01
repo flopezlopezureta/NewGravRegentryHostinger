@@ -91,10 +91,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </button>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-slate-600 text-[9px] uppercase font-bold tracking-widest leading-relaxed">
-              Credenciales por defecto:<br />
-              Usuario: <span className="text-slate-400">admin</span> / Clave: <span className="text-slate-400">admindemo</span>
+          <div className="mt-8 text-center space-y-2">
+            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-[0.2em]">
+              By Selcom Ltda
+            </p>
+            <p className="text-slate-600 text-[9px] font-medium tracking-widest opacity-50">
+              Version 1.0.2
             </p>
           </div>
         </div>

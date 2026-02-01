@@ -1,60 +1,57 @@
 <?php
 /**
- * Selcom IoT Hub - Deployment Cleanup Script
- * Este script elimina los archivos de código fuente que se subieron por error a public_html
+ * SELCOM HUB - CLEANUP TOTAL (NUCLEAR)
+ * Este script limpia TODO el directorio public_html excepto el .env de la API.
  */
 
-$filesToDelete = [
-    'index.tsx',
-    'index.css',
-    'types.ts',
-    'package.json',
-    'package-lock.json',
-    'tailwind.config.js',
-    'postcss.config.js',
-    'vite.config.ts',
-    'tsconfig.json',
-    'metadata.json',
-    'App.tsx',
-    'index.php',
-    'default.php',
-    'index.php.bak'
+$keepFiles = [
+    'cleanup.php',
+    'api' // Mantener la carpeta api para no perder el .env
 ];
 
-// Comprobar si el index.html es el de desarrollo (contiene index.tsx)
-if (file_exists('index.html')) {
-    $content = file_get_contents('index.html');
-    if (strpos($content, 'index.tsx') !== false) {
-        $filesToDelete[] = 'index.html';
-    }
-}
-
-$foldersToDelete = [
-    'components',
-    'services',
-    'node_modules',
-    '.git'
+$keepInApi = [
+    '.env',
+    '.htaccess',
+    'db.php',
+    'iot_backend.php'
 ];
 
-echo "<h2>Limpieza de Selcom IoT Hub</h2>";
+echo "<h2>🚀 Iniciando Limpieza Total de Selcom IoT Hub</h2>";
 
-foreach ($filesToDelete as $file) {
-    if (file_exists($file)) {
-        if (unlink($file)) {
-            echo "✅ Archivo eliminado: $file <br>";
+// 1. Limpiar carpeta API pero mantener lo vital
+if (is_dir('api')) {
+    $apiFiles = scandir('api');
+    foreach ($apiFiles as $file) {
+        if ($file == '.' || $file == '..')
+            continue;
+        if (in_array($file, $keepInApi))
+            continue;
+
+        $path = 'api/' . $file;
+        if (is_dir($path)) {
+            deleteDirectory($path);
+            echo "🗑️ Carpeta API eliminada: $file<br>";
         } else {
-            echo "❌ Error al eliminar archivo: $file <br>";
+            unlink($path);
+            echo "🗑️ Archivo API eliminado: $file<br>";
         }
     }
 }
 
-foreach ($foldersToDelete as $folder) {
-    if (is_dir($folder)) {
-        if (deleteDirectory($folder)) {
-            echo "✅ Carpeta eliminada: $folder <br>";
-        } else {
-            echo "❌ Error al eliminar carpeta: $folder <br>";
-        }
+// 2. Limpiar todo lo demás en la raíz
+$rootFiles = scandir('.');
+foreach ($rootFiles as $file) {
+    if ($file == '.' || $file == '..')
+        continue;
+    if (in_array($file, $keepFiles))
+        continue;
+
+    if (is_dir($file)) {
+        deleteDirectory($file);
+        echo "🔥 Carpeta eliminada: $file<br>";
+    } else {
+        unlink($file);
+        echo "🔥 Archivo eliminado: $file<br>";
     }
 }
 
@@ -73,8 +70,9 @@ function deleteDirectory($dir)
     return rmdir($dir);
 }
 
-echo "<br><b>Limpieza completada.</b><br>";
-echo "Archivos en raíz: <pre>";
-print_r(scandir('.'));
-echo "</pre>";
+echo "<br><h3 style='color:green'>✨ DIRECTORIO LIMPIO ✨</h3>";
+echo "<h4>Próximos pasos:</h4>";
+echo "1. El Hub se verá vacío o dará error 404 ahora.<br>";
+echo "2. Avísame para que yo active el despliegue automático final.<br>";
+echo "3. En 1 minuto tu sitio estará 100% perfecto.<br>";
 ?>
