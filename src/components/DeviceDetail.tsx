@@ -29,11 +29,11 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
   const [maxInput, setMaxInput] = useState(String(device.thresholds?.max ?? 80));
 
   useEffect(() => {
-    setMinInput(String(minThreshold));
+    setMinInput(minThreshold.toFixed(1));
   }, [minThreshold]);
 
   useEffect(() => {
-    setMaxInput(String(maxThreshold));
+    setMaxInput(maxThreshold.toFixed(1));
   }, [maxThreshold]);
 
   const [intervalSec, setIntervalSec] = useState<number>(device.hardwareConfig?.interval || 10);
@@ -193,15 +193,21 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
     if (!e || !e.chartY || !e.viewBox) return;
 
     const { y, height } = e.viewBox;
-    const [minD, maxD] = chartDomain;
-    const range = maxD - minD;
+    // Use stable chartDomain calculation logic instead of dynamic activeDomain
+    const values = dataPoints.map(p => p.value);
+    const minVal = Math.min(...values, minThreshold, maxThreshold);
+    const maxVal = Math.max(...values, minThreshold, maxThreshold);
+    const padding = (maxVal - minVal) * 0.2 || 1;
+    const currentMinD = minVal - padding;
+    const currentMaxD = maxVal + padding;
+    const range = currentMaxD - currentMinD;
 
     // Calculate value: top of viewBox is maxD, bottom is minD
     const ratio = (e.chartY - y) / height;
-    const clickValue = maxD - (ratio * range);
+    const clickValue = currentMaxD - (ratio * range);
 
-    // Expand margin to 10% for easier grabbing
-    const thresholdMargin = range * 0.10;
+    // Expand margin to 15% for even easier grabbing on small screens
+    const thresholdMargin = range * 0.15;
 
     if (Math.abs(clickValue - maxThreshold) < thresholdMargin) {
       setDraggingThreshold('max');
@@ -245,7 +251,7 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
     const values = dataPoints.map(p => p.value);
     const minVal = Math.min(...values, minThreshold, maxThreshold);
     const maxVal = Math.max(...values, minThreshold, maxThreshold);
-    const padding = (maxVal - minVal) * 0.2 || 1;
+    const padding = (maxVal - minVal) * 0.3 || 2; // Increased padding for stability
     return [minVal - padding, maxVal + padding];
   }, [dataPoints, minThreshold, maxThreshold]);
 
@@ -354,8 +360,8 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                         <span className="text-slate-500 text-xs font-bold uppercase">{device.unit}</span>
                       </div>
                       <div className="mt-3 flex gap-4 text-[9px] font-bold">
-                        <span className="text-rose-400">Min: {minThreshold}</span>
-                        <span className="text-rose-400">Max: {maxThreshold}</span>
+                        <span className="text-rose-400">Min: {minThreshold.toFixed(1)}</span>
+                        <span className="text-rose-400">Max: {maxThreshold.toFixed(1)}</span>
                       </div>
                     </div>
                   )}
@@ -438,7 +444,7 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                           strokeWidth={draggingThreshold === 'min' ? 4 : 2}
                           isFront
                           label={{
-                            value: `Min: ${minThreshold}`,
+                            value: `Min: ${minThreshold.toFixed(1)}`,
                             fill: '#f43f5e',
                             fontSize: 10,
                             fontWeight: 'bold',
@@ -452,7 +458,7 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                           strokeWidth={draggingThreshold === 'max' ? 4 : 2}
                           isFront
                           label={{
-                            value: `Max: ${maxThreshold}`,
+                            value: `Max: ${maxThreshold.toFixed(1)}`,
                             fill: '#f43f5e',
                             fontSize: 10,
                             fontWeight: 'bold',
