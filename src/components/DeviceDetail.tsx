@@ -184,17 +184,14 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
     const viewBox = e.viewBox;
     if (!viewBox) return;
 
-    // Calculate value from chartY (inverse of scale)
-    const values = dataPoints.map(p => p.value);
-    const minD = Math.min(...values, minThreshold, maxThreshold) * 0.8;
-    const maxD = Math.max(...values, minThreshold, maxThreshold) * 1.2;
+    const [minD, maxD] = chartDomain;
     const range = maxD - minD;
 
     const relativeY = (viewBox.y + viewBox.height - e.chartY) / viewBox.height;
     const clickValue = minD + (relativeY * range);
 
-    // Check if click is near a threshold (within 5% of range)
-    const thresholdMargin = range * 0.05;
+    // Check if click is near a threshold (within 8% of range for easier grabbing)
+    const thresholdMargin = range * 0.08;
 
     if (Math.abs(clickValue - maxThreshold) < thresholdMargin) {
       setDraggingThreshold('max');
@@ -209,9 +206,7 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
     const viewBox = e.viewBox;
     if (!viewBox) return;
 
-    const values = dataPoints.map(p => p.value);
-    const minD = Math.min(...values, minThreshold, maxThreshold) * 0.8;
-    const maxD = Math.max(...values, minThreshold, maxThreshold) * 1.2;
+    const [minD, maxD] = chartDomain;
     const range = maxD - minD;
 
     const relativeY = (viewBox.y + viewBox.height - e.chartY) / viewBox.height;
@@ -239,6 +234,16 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
   const safeValue = Number(device.value) || 0;
   const safeOffset = Number(calibrationOffset) || 0;
   const displayedValue = safeValue + safeOffset;
+
+  // Calculate consistent domain for chart and dragging
+  const chartDomain = useMemo(() => {
+    const values = dataPoints.map(p => p.value);
+    const minVal = Math.min(...values, minThreshold, maxThreshold);
+    const maxVal = Math.max(...values, minThreshold, maxThreshold);
+    const padding = (maxVal - minVal) * 0.2 || 1;
+    return [minVal - padding, maxVal + padding];
+  }, [dataPoints, minThreshold, maxThreshold]);
+
   const isOutOfRange = !maintenanceMode && (displayedValue < minThreshold || displayedValue > maxThreshold);
 
   return (
@@ -353,7 +358,7 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                           axisLine={{ stroke: '#334155' }}
                         />
                         <YAxis
-                          domain={[(dataMin: number) => Math.min(dataMin, minThreshold, maxThreshold) * 0.8, (dataMax: number) => Math.max(dataMax, minThreshold, maxThreshold) * 1.2]}
+                          domain={chartDomain}
                           tick={{ fill: '#64748b', fontSize: 9, fontWeight: 'bold' }}
                           tickLine={{ stroke: '#334155' }}
                           axisLine={{ stroke: '#334155' }}
@@ -555,12 +560,15 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                         <p className="text-[9px] text-slate-400 font-black uppercase mb-1">Mínimo</p>
                         <input
                           type="number"
+                          step="any"
                           value={minThreshold}
                           onChange={e => {
                             const val = parseFloat(e.target.value);
-                            setMinThreshold(val);
-                            databaseService.updateDevice(device.id, { thresholds: { min: val, max: maxThreshold } });
-                            onRefresh();
+                            if (!isNaN(val)) {
+                              setMinThreshold(val);
+                              databaseService.updateDevice(device.id, { thresholds: { min: val, max: maxThreshold } });
+                              onRefresh();
+                            }
                           }}
                           className="w-full bg-transparent text-white text-lg sm:text-xl font-black font-mono leading-none text-center outline-none"
                         />
@@ -569,12 +577,15 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                         <p className="text-[9px] text-slate-400 font-black uppercase mb-1">Máximo</p>
                         <input
                           type="number"
+                          step="any"
                           value={maxThreshold}
                           onChange={e => {
                             const val = parseFloat(e.target.value);
-                            setMaxThreshold(val);
-                            databaseService.updateDevice(device.id, { thresholds: { min: minThreshold, max: val } });
-                            onRefresh();
+                            if (!isNaN(val)) {
+                              setMaxThreshold(val);
+                              databaseService.updateDevice(device.id, { thresholds: { min: minThreshold, max: val } });
+                              onRefresh();
+                            }
                           }}
                           className="w-full bg-transparent text-white text-lg sm:text-xl font-black font-mono leading-none text-center outline-none"
                         />
