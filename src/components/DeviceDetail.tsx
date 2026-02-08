@@ -106,7 +106,11 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
 
       if (Array.isArray(history) && history.length > 0) {
         const mapped = history.map((h: any) => {
-          const d = new Date(h.timestamp);
+          // Force UTC interpretation if not already specified
+          const timestampStr = h.timestamp.includes('Z') || h.timestamp.includes('+')
+            ? h.timestamp
+            : h.timestamp.replace(' ', 'T') + 'Z';
+          const d = new Date(timestampStr);
           return {
             value: parseFloat(h.value),
             time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
