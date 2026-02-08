@@ -26,7 +26,8 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
 
   const [intervalSec, setIntervalSec] = useState<number>(device.hardwareConfig?.interval || 10);
   const [timeRange, setTimeRange] = useState<number>(5);
-  // const [draggingThreshold, setDraggingThreshold] = useState<'min' | 'max' | null>(null); // Removed for Recharts version
+  const [draggingThreshold, setDraggingThreshold] = useState<'min' | 'max' | null>(null);
+  const chartRef = useRef<any>(null);
 
   const [generatedSketch, setGeneratedSketch] = useState<{ code: string, explanation: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -172,18 +173,51 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
     });
   }, [device.value]);
 
-  // handleMouseUp for threshold removed/commented out as interaction changed
-  /*
+  const handleMouseDown = (type: 'min' | 'max') => {
+    setDraggingThreshold(type);
+  };
+
+  const handleMouseMove = (e: any) => {
+    if (!draggingThreshold || !e || !e.chartY) return;
+
+    // Calculate value from chartY
+    const viewBox = e.viewBox;
+    if (!viewBox) return;
+
+    // Get domain from chart internal state if possible, or use a reasonable approximation
+    // For now, let's use the chart's coordinate system if accessible
+    // A better way is to use the coordinate provided by Recharts for the Y axis
+    if (e.activeCoordinate && e.activeCoordinate.y) {
+      // This is often for the data points. 
+    }
+
+    // fallback: simple linear interpolation based on height
+    // We need to know the domain. Let's calculate it from dataPoints.
+    const values = dataPoints.map(p => p.value);
+    const minD = Math.min(...values, minThreshold, maxThreshold) * 0.8;
+    const maxD = Math.max(...values, minThreshold, maxThreshold) * 1.2;
+    const range = maxD - minD;
+
+    const relativeY = (viewBox.y + viewBox.height - e.chartY) / viewBox.height;
+    const newValue = minD + (relativeY * range);
+    const roundedValue = Math.round(newValue * 10) / 10;
+
+    if (draggingThreshold === 'min') {
+      setMinThreshold(Math.min(roundedValue, maxThreshold - 0.1));
+    } else {
+      setMaxThreshold(Math.max(roundedValue, minThreshold + 0.1));
+    }
+  };
+
   const handleMouseUp = () => {
     if (draggingThreshold) {
       databaseService.updateDevice(device.id, {
         thresholds: { min: minThreshold, max: maxThreshold }
       });
-      onRefresh(); 
+      onRefresh();
     }
     setDraggingThreshold(null);
   };
-  */
 
   // Ensure values are numbers to prevent "toFixed is not a function" error
   const safeValue = Number(device.value) || 0;
@@ -253,44 +287,114 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row items-center justify-around gap-12 py-6">
+                <div className="flex flex-col md:flex-row items-stretch gap-6 py-4">
                   {mode === 'grafana' ? (
                     <Gauge
                       value={displayedValue}
                       min={minThreshold}
                       max={maxThreshold}
                       unit={device.unit}
-                      size={240}
+                      size={180}
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center p-8 bg-slate-900/40 rounded-[2.5rem] border border-slate-700/20 min-w-[240px]">
-                      <span className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mb-4">Valor Actual</span>
-                      <div className="flex items-baseline gap-3">
-                        <span className={`text-7xl font-black brand-logo tracking-tighter tabular-nums ${isOutOfRange ? 'text-rose-500' : 'text-cyan-400'}`}>
+                    <div className="flex flex-col items-center justify-center p-4 bg-slate-900/40 rounded-2xl border border-slate-700/20 min-w-[140px]">
+                      <span className="text-slate-500 text-[9px] font-black uppercase tracking-[0.3em] mb-2">Actual</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className={`text-4xl font-black brand-logo tracking-tighter tabular-nums ${isOutOfRange ? 'text-rose-500' : 'text-cyan-400'}`}>
                           {displayedValue.toFixed(1)}
                         </span>
-                        <span className="text-slate-500 text-sm font-bold uppercase">{device.unit}</span>
+                        <span className="text-slate-500 text-xs font-bold uppercase">{device.unit}</span>
+                      </div>
+                      <div className="mt-3 flex gap-4 text-[9px] font-bold">
+                        <span className="text-rose-400">Min: {minThreshold}</span>
+                        <span className="text-rose-400">Max: {maxThreshold}</span>
                       </div>
                     </div>
                   )}
 
-                  <div className="flex-1 w-full h-[240px] bg-slate-900/40 rounded-[2rem] border border-slate-700/30 p-6 overflow-hidden">
+                  <div className="flex-1 w-full h-[320px] bg-slate-900/40 rounded-2xl border border-slate-700/30 p-4 overflow-hidden">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={dataPoints}>
+                      <AreaChart
+                        data={dataPoints}
+                        margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                      >
                         <defs>
                           <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor={isOutOfRange ? "#f43f5e" : "#22d3ee"} stopOpacity={0.4} />
                             <stop offset="95%" stopColor={isOutOfRange ? "#f43f5e" : "#22d3ee"} stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} vertical={false} />
-                        <XAxis hide dataKey="time" />
-                        <YAxis hide domain={['auto', 'auto']} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                        <XAxis
+                          dataKey="time"
+                          tick={{ fill: '#64748b', fontSize: 9, fontWeight: 'bold' }}
+                          tickLine={{ stroke: '#334155' }}
+                          axisLine={{ stroke: '#334155' }}
+                        />
+                        <YAxis
+                          domain={[(dataMin: number) => Math.min(dataMin, minThreshold, maxThreshold) * 0.8, (dataMax: number) => Math.max(dataMax, minThreshold, maxThreshold) * 1.2]}
+                          tick={{ fill: '#64748b', fontSize: 9, fontWeight: 'bold' }}
+                          tickLine={{ stroke: '#334155' }}
+                          axisLine={{ stroke: '#334155' }}
+                          width={40}
+                        />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#0f172a', borderColor: isOutOfRange ? '#f43f5e' : '#22d3ee', borderRadius: '1.5rem', color: '#fff', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5)' }}
-                          itemStyle={{ color: isOutOfRange ? '#f43f5e' : '#22d3ee', fontWeight: 'black', textTransform: 'uppercase', fontSize: '11px' }}
-                          labelStyle={{ display: 'none' }}
+                          contentStyle={{
+                            backgroundColor: '#0f172a',
+                            borderColor: isOutOfRange ? '#f43f5e' : '#22d3ee',
+                            borderRadius: '1rem',
+                            color: '#fff',
+                            boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5)',
+                            padding: '12px 16px'
+                          }}
+                          formatter={(value: number) => [`${value.toFixed(2)} ${device.unit}`, 'Valor']}
+                          labelFormatter={(label: string, payload: any[]) => {
+                            if (payload && payload[0]) {
+                              return `${payload[0].payload.date} ${label}`;
+                            }
+                            return label;
+                          }}
+                          labelStyle={{ color: '#94a3b8', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px' }}
+                          itemStyle={{ color: isOutOfRange ? '#f43f5e' : '#22d3ee', fontWeight: 'bold', fontSize: '14px' }}
                           cursor={{ stroke: isOutOfRange ? '#f43f5e' : '#22d3ee', strokeWidth: 1, strokeDasharray: '4 4' }}
+                        />
+                        {/* Threshold Reference Lines */}
+                        <ReferenceLine
+                          y={minThreshold}
+                          stroke="#f43f5e"
+                          strokeDasharray="5 5"
+                          strokeWidth={2}
+                          isFront
+                          className="cursor-ns-resize"
+                          onMouseDown={() => handleMouseDown('min')}
+                          label={{
+                            value: `Min: ${minThreshold}`,
+                            fill: '#f43f5e',
+                            fontSize: 10,
+                            fontWeight: 'bold',
+                            position: 'left',
+                            className: 'cursor-ns-resize'
+                          }}
+                        />
+                        <ReferenceLine
+                          y={maxThreshold}
+                          stroke="#f43f5e"
+                          strokeDasharray="5 5"
+                          strokeWidth={2}
+                          isFront
+                          className="cursor-ns-resize"
+                          onMouseDown={() => handleMouseDown('max')}
+                          label={{
+                            value: `Max: ${maxThreshold}`,
+                            fill: '#f43f5e',
+                            fontSize: 10,
+                            fontWeight: 'bold',
+                            position: 'left',
+                            className: 'cursor-ns-resize'
+                          }}
                         />
                         <Area
                           type="monotone"
@@ -299,10 +403,11 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                           strokeWidth={3}
                           fill="url(#colorVal)"
                           animationDuration={1500}
+                          dot={false}
+                          activeDot={{ r: 6, fill: isOutOfRange ? "#f43f5e" : "#22d3ee", stroke: '#fff', strokeWidth: 2 }}
                         />
                       </AreaChart>
                     </ResponsiveContainer>
-                    <p className="text-center text-[8px] font-black text-slate-600 uppercase tracking-widest mt-2 italic">Tendencia de los últimos 20 reportes</p>
                   </div>
                 </div>
               </div>
