@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Base de datos MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: selcom-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-selcom_iot}
+      MYSQL_USER: ${DB_USER:-selcom}
+      MYSQL_PASSWORD: ${DB_PASS}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./deploy/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - selcom-network
+
+  # Aplicación PHP + React
+  app:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    container_name: selcom-app
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_NAME: ${DB_NAME:-selcom_iot}
+      DB_USER: ${DB_USER:-selcom}
+      DB_PASS: ${DB_PASS}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "80:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./logs:/var/log/apache2
+    networks:
+      - selcom-network
+
+  # phpMyAdmin (opcional, para administrar la BD)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: selcom-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: ${DB_USER:-selcom}
+      PMA_PASSWORD: ${DB_PASS}
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - selcom-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  selcom-network:
+    driver: bridge
