@@ -1,4 +1,4 @@
-
+// DeviceDetail.tsx - v1.1.0 - Improved Chart Interactivity
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Device, SensorType, AuditLog, NotificationSettings } from '../types';
 import { generateIoTCode } from '../services/geminiService';
