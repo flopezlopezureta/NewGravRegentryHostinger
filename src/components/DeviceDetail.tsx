@@ -24,6 +24,18 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
   const [minThreshold, setMinThreshold] = useState<number>(device.thresholds?.min ?? 20);
   const [maxThreshold, setMaxThreshold] = useState<number>(device.thresholds?.max ?? 80);
 
+  // Local string states for smooth input typing (allows decimal points)
+  const [minInput, setMinInput] = useState(String(device.thresholds?.min ?? 20));
+  const [maxInput, setMaxInput] = useState(String(device.thresholds?.max ?? 80));
+
+  useEffect(() => {
+    setMinInput(String(minThreshold));
+  }, [minThreshold]);
+
+  useEffect(() => {
+    setMaxInput(String(maxThreshold));
+  }, [maxThreshold]);
+
   const [intervalSec, setIntervalSec] = useState<number>(device.hardwareConfig?.interval || 10);
   const [timeRange, setTimeRange] = useState<number>(5);
   const [draggingThreshold, setDraggingThreshold] = useState<'min' | 'max' | null>(null);
@@ -178,20 +190,18 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
   }, [device.value]);
 
   const handleMouseDown = (e: any) => {
-    if (!e || !e.chartY) return;
+    if (!e || !e.chartY || !e.viewBox) return;
 
-    // Get relative Y position in the chart
-    const viewBox = e.viewBox;
-    if (!viewBox) return;
-
+    const { y, height } = e.viewBox;
     const [minD, maxD] = chartDomain;
     const range = maxD - minD;
 
-    const relativeY = (viewBox.y + viewBox.height - e.chartY) / viewBox.height;
-    const clickValue = minD + (relativeY * range);
+    // Calculate value: top of viewBox is maxD, bottom is minD
+    const ratio = (e.chartY - y) / height;
+    const clickValue = maxD - (ratio * range);
 
-    // Check if click is near a threshold (within 8% of range for easier grabbing)
-    const thresholdMargin = range * 0.08;
+    // Expand margin to 10% for easier grabbing
+    const thresholdMargin = range * 0.10;
 
     if (Math.abs(clickValue - maxThreshold) < thresholdMargin) {
       setDraggingThreshold('max');
@@ -201,28 +211,26 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
   };
 
   const handleMouseMove = (e: any) => {
-    if (!draggingThreshold || !e || !e.chartY) return;
+    if (!draggingThreshold || !e || !e.chartY || !e.viewBox) return;
 
-    const viewBox = e.viewBox;
-    if (!viewBox) return;
-
+    const { y, height } = e.viewBox;
     const [minD, maxD] = chartDomain;
     const range = maxD - minD;
 
-    const relativeY = (viewBox.y + viewBox.height - e.chartY) / viewBox.height;
-    const newValue = minD + (relativeY * range);
+    const ratio = (e.chartY - y) / height;
+    const newValue = maxD - (ratio * range);
     const roundedValue = Math.round(newValue * 10) / 10;
 
     if (draggingThreshold === 'min') {
-      setMinThreshold(Math.min(roundedValue, maxThreshold - 0.1));
+      setMinThreshold(Math.min(roundedValue, maxThreshold - 0.5));
     } else {
-      setMaxThreshold(Math.max(roundedValue, minThreshold + 0.1));
+      setMaxThreshold(Math.max(roundedValue, minThreshold + 0.5));
     }
   };
 
   const handleMouseUp = () => {
     if (draggingThreshold) {
-      saveThresholds();
+      saveFromDrag();
     }
     setDraggingThreshold(null);
   };
@@ -245,6 +253,20 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
 
   // Persistence helpers
   const saveThresholds = () => {
+    const min = parseFloat(minInput);
+    const max = parseFloat(maxInput);
+
+    if (!isNaN(min) && !isNaN(max)) {
+      setMinThreshold(min);
+      setMaxThreshold(max);
+      databaseService.updateDevice(device.id, {
+        thresholds: { min, max }
+      });
+      onRefresh();
+    }
+  };
+
+  const saveFromDrag = () => {
     databaseService.updateDevice(device.id, {
       thresholds: { min: minThreshold, max: maxThreshold }
     });
@@ -583,10 +605,10 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                       <div className="bg-slate-900 border-2 border-slate-800 p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-inner text-center">
                         <p className="text-[9px] text-slate-400 font-black uppercase mb-1">Mínimo</p>
                         <input
-                          type="number"
-                          step="any"
-                          value={minThreshold}
-                          onChange={e => setMinThreshold(e.target.value as any)}
+                          type="text"
+                          inputMode="decimal"
+                          value={minInput}
+                          onChange={e => setMinInput(e.target.value)}
                           onBlur={saveThresholds}
                           className="w-full bg-transparent text-white text-lg sm:text-xl font-black font-mono leading-none text-center outline-none"
                         />
@@ -594,10 +616,10 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                       <div className="bg-slate-900 border-2 border-slate-800 p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-inner text-center">
                         <p className="text-[9px] text-slate-400 font-black uppercase mb-1">Máximo</p>
                         <input
-                          type="number"
-                          step="any"
-                          value={maxThreshold}
-                          onChange={e => setMaxThreshold(e.target.value as any)}
+                          type="text"
+                          inputMode="decimal"
+                          value={maxInput}
+                          onChange={e => setMaxInput(e.target.value)}
                           onBlur={saveThresholds}
                           className="w-full bg-transparent text-white text-lg sm:text-xl font-black font-mono leading-none text-center outline-none"
                         />
