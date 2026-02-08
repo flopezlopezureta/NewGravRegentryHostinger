@@ -1,4 +1,4 @@
-// DeviceDetail.tsx - v1.2.0 - Improved Chart Interactivity (Decimal Fixes & Dragging)
+// DeviceDetail.tsx - v1.3.0 - Improved Chart Interactivity (Invisible Handles & UI Fixes)
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Device, SensorType, AuditLog, NotificationSettings } from '../types';
 import { generateIoTCode } from '../services/geminiService';
@@ -222,10 +222,7 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
 
   const handleMouseUp = () => {
     if (draggingThreshold) {
-      databaseService.updateDevice(device.id, {
-        thresholds: { min: minThreshold, max: maxThreshold }
-      });
-      onRefresh();
+      saveThresholds();
     }
     setDraggingThreshold(null);
   };
@@ -246,9 +243,17 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
 
   const isOutOfRange = !maintenanceMode && (displayedValue < minThreshold || displayedValue > maxThreshold);
 
+  // Persistence helpers
+  const saveThresholds = () => {
+    databaseService.updateDevice(device.id, {
+      thresholds: { min: minThreshold, max: maxThreshold }
+    });
+    onRefresh();
+  };
+
   return (
     <>
-      <div className="space-y-6 sm:space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-12 select-none">
+      <div className="space-y-6 sm:space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-12">
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -385,6 +390,25 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                           cursor={{ stroke: isOutOfRange ? '#f43f5e' : '#22d3ee', strokeWidth: 1, strokeDasharray: '4 4' }}
                         />
                         {/* Threshold Reference Lines */}
+                        {/* Hidden Wide Hit Areas for easiest dragging */}
+                        <ReferenceLine
+                          y={minThreshold}
+                          stroke="transparent"
+                          strokeWidth={20}
+                          isFront
+                          style={{ cursor: 'ns-resize' }}
+                          onMouseDown={() => setDraggingThreshold('min')}
+                        />
+                        <ReferenceLine
+                          y={maxThreshold}
+                          stroke="transparent"
+                          strokeWidth={20}
+                          isFront
+                          style={{ cursor: 'ns-resize' }}
+                          onMouseDown={() => setDraggingThreshold('max')}
+                        />
+
+                        {/* Visible Lines */}
                         <ReferenceLine
                           y={minThreshold}
                           stroke="#f43f5e"
@@ -562,14 +586,8 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                           type="number"
                           step="any"
                           value={minThreshold}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value);
-                            if (!isNaN(val)) {
-                              setMinThreshold(val);
-                              databaseService.updateDevice(device.id, { thresholds: { min: val, max: maxThreshold } });
-                              onRefresh();
-                            }
-                          }}
+                          onChange={e => setMinThreshold(e.target.value as any)}
+                          onBlur={saveThresholds}
                           className="w-full bg-transparent text-white text-lg sm:text-xl font-black font-mono leading-none text-center outline-none"
                         />
                       </div>
@@ -579,14 +597,8 @@ const DeviceDetail: React.FC<DeviceDetailProps> = ({ device, mode = 'normal', on
                           type="number"
                           step="any"
                           value={maxThreshold}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value);
-                            if (!isNaN(val)) {
-                              setMaxThreshold(val);
-                              databaseService.updateDevice(device.id, { thresholds: { min: minThreshold, max: val } });
-                              onRefresh();
-                            }
-                          }}
+                          onChange={e => setMaxThreshold(e.target.value as any)}
+                          onBlur={saveThresholds}
                           className="w-full bg-transparent text-white text-lg sm:text-xl font-black font-mono leading-none text-center outline-none"
                         />
                       </div>
